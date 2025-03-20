@@ -24,7 +24,7 @@ keywords = [
   "rerun-viewer",
 ]
 # Add dependencies here
-dependencies = ["gradio>=4.0,<5.0", "rerun-sdk>=0.19.0", "opencv-python"]
+dependencies = ["gradio>=5.22.0", "rerun-sdk>=0.22.1", "opencv-python"]
 classifiers = [
   'Development Status :: 3 - Alpha',
   'Operating System :: OS Independent',

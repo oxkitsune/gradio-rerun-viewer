@@ -212,12 +212,21 @@ if __name__ == "__main__":
 <td align="left" style="width: 25%;">
 
 ```python
-list[pathlib.Path | str]
-    | pathlib.Path
-    | str
-    | bytes
-    | Callable
-    | None
+typing.Union[
+    list[pathlib.Path | str],
+    pathlib.Path,
+    str,
+    bytes,
+    typing.Callable,
+    NoneType,
+][
+    list[pathlib.Path | str],
+    pathlib.Path,
+    str,
+    bytes,
+    Callable,
+    None,
+]
 ```
 
 </td>

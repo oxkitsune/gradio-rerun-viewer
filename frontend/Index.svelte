@@ -7,10 +7,13 @@
 <script lang="ts">
   import "./app.css";
   import type { Gradio } from "@gradio/utils";
-
-  import { WebViewer, type Panel, type PanelState } from "@rerun-io/web-viewer";
+  import {
+    LogChannel,
+    WebViewer,
+    type Panel,
+    type PanelState,
+  } from "@rerun-io/web-viewer";
   import { onMount } from "svelte";
-
   import { Block } from "@gradio/atoms";
   import { StatusTracker } from "@gradio/statustracker";
   import type { FileData } from "@gradio/client";
@@ -35,7 +38,6 @@
   export let panel_states: { [K in Panel]: PanelState } | null = null;
 
   let old_value: null | BinaryStream | (FileData | string)[] = null;
-
   export let gradio: Gradio<{
     change: never;
     upload: never;
@@ -47,20 +49,101 @@
 
   let dragging: boolean;
   let rr: WebViewer;
+  let channel: LogChannel;
   let ref: HTMLDivElement;
   let patched_loading_status: LoadingStatus;
 
+  // Global set to track segments already sent
+  let sentSegments = new Set<string>();
+
   function try_load_value() {
-    if (JSON.stringify(value) !== JSON.stringify(old_value) && rr != undefined && rr.ready) {
+    console.log("try load value", value, old_value);
+    if (rr != undefined && rr.ready) {
+      console.log("should be ready");
       old_value = value;
       if (!Array.isArray(value)) {
+        console.log("not array");
         if (value.is_stream) {
-          rr.open(value.url, { follow_if_http: true });
+          console.log("is a stream", value);
+          console.log("url:", value.url);
+          // Fetch the HLS playlist
+          fetch(value.url)
+            .then((response) => {
+              if (!response.ok) throw new Error("Failed to fetch playlist");
+              return response.text();
+            })
+            .then((playlistContent) => {
+              // Parse the playlist to extract segment URLs
+              const lines = playlistContent.trim().split("\n");
+              const baseUrl = new URL("./", value.url).href;
+              const uniqueSegmentUrls: string[] = [];
+
+              // Only include segments that haven't been processed yet
+              lines.forEach((line) => {
+                if (!line.startsWith("#") && line.trim()) {
+                  const segmentUrl = line.startsWith("http")
+                    ? line
+                    : new URL(line, baseUrl).href;
+                  if (!sentSegments.has(segmentUrl)) {
+                    uniqueSegmentUrls.push(segmentUrl);
+                  }
+                }
+              });
+
+              // Fetch and process each segment sequentially
+              let processedCount = 0;
+              function processNextSegment() {
+                if (processedCount >= uniqueSegmentUrls.length) {
+                  return;
+                }
+                const currentUrl = uniqueSegmentUrls[processedCount];
+                console.log(
+                  `Fetching segment ${processedCount + 1}/${uniqueSegmentUrls.length}: ${currentUrl}`
+                );
+
+                // Extra check in case the segment was processed in a previous run
+                if (sentSegments.has(currentUrl)) {
+                  processedCount++;
+                  processNextSegment();
+                  return;
+                }
+
+                fetch(currentUrl)
+                  .then((response) => {
+                    if (!response.ok)
+                      throw new Error(`Failed to fetch segment: ${currentUrl}`);
+                    return response.arrayBuffer();
+                  })
+                  .then((buffer) => {
+                    channel.send_rrd(new Uint8Array(buffer));
+
+                    sentSegments.add(currentUrl);
+                    processedCount++;
+                    processNextSegment();
+                  })
+                  .catch((error) => {
+                    console.error(
+                      `Error processing segment ${currentUrl}:`,
+                      error
+                    );
+                    processedCount++;
+                    processNextSegment();
+                  });
+              }
+              processNextSegment();
+            })
+            .catch((error) => {
+              console.error("Error fetching or processing HLS stream:", error);
+            });
         } else {
+          console.log("not a stream", value);
+          console.log("url:", value.url);
           rr.open(value.url);
         }
       } else {
+        console.log("is an array");
         for (const file of value) {
+          console.log("file:", file);
           if (typeof file !== "string") {
             if (file.url) {
               rr.open(file.url);
@@ -73,12 +156,12 @@
     }
   }
 
-  const is_panel = (v: string): v is Panel => ["top", "blueprint", "selection", "time"].includes(v);
+  const is_panel = (v: string): v is Panel =>
+    ["top", "blueprint", "selection", "time"].includes(v);
 
   function setup_panels() {
     if (rr?.ready && panel_states) {
       for (const panel in panel_states) {
-        // ignore extra properties
         if (!is_panel(panel)) continue;
         rr.override_panel_state(panel, panel_states[panel]);
       }
@@ -88,6 +171,7 @@
   onMount(() => {
     rr = new WebViewer();
     rr.on("ready", () => {
+      channel = rr.open_channel("gradio");
       try_load_value();
       setup_panels();
     });
@@ -100,16 +184,15 @@
       height: "",
     });
     return () => {
+      channel = null;
       rr.stop();
     };
   });
 
   $: {
     patched_loading_status = loading_status;
-
-    // In streaming mode, we want the UI to be interactive even while the model is generating
-    // so set the status to complete.
-    // @ts-expect-error: `status` union does not include `generating`
+    console.log("loading status", loading_status?.status);
+    console.log("streaming", streaming);
     if (streaming && patched_loading_status?.status === "generating") {
       patched_loading_status.status = "complete";
     }
@@ -145,7 +228,6 @@
 <style lang="scss">
   div.viewer {
     width: 100%;
-
     :global(> canvas) {
       display: block;
       width: 100%;
