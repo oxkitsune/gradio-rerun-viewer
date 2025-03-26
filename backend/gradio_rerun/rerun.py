@@ -2,17 +2,90 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Literal
 
-import base64
-
-
-from gradio_client import file
-from gradio import processing_utils
+from gradio import EventData, processing_utils
 from gradio.components.base import Component, StreamingOutput
-from gradio.data_classes import GradioRootModel, FileData, MediaStreamChunk
+from gradio.data_classes import FileData, GradioRootModel, MediaStreamChunk
 from gradio.events import EventListener
+
+
+@dataclass
+class EntitySelection:
+    """
+    Selected an entity, or an instance of an entity.
+
+    If the entity was selected within a view, then this also
+    includes the view's name.
+
+    If the entity was selected within a 2D or 3D space view,
+    then this also includes the position.
+    """
+
+    @property
+    def kind(self) -> Literal["entity"]:
+        return "entity"
+
+    entity_path: str
+    instance_id: int | None
+    view_name: str | None
+    position: tuple[int, int, int] | None
+
+
+@dataclass
+class ViewSelection:
+    """Selected a view."""
+
+    @property
+    def kind(self) -> Literal["view"]:
+        return "view"
+
+    view_id: str
+    view_name: str
+
+
+@dataclass
+class ContainerSelection:
+    """Selected a container."""
+
+    @property
+    def kind(self) -> Literal["container"]:
+        return "container"
+
+    container_id: str
+    container_name: str
+
+
+SelectionItem = EntitySelection | ViewSelection | ContainerSelection
+"""A single item in a selection."""
+
+
+def _selection_item_from_json(json: Any) -> SelectionItem:
+    if json["type"] == "entity":
+        position = json.get("position", None)
+        return EntitySelection(
+            entity_path=json["entity_path"],
+            instance_id=json.get("instance_id", None),
+            view_name=json.get("view_name", None),
+            position=(position[0], position[1], position[2]) if position is not None else None,
+        )
+    if json["type"] == "view":
+        return ViewSelection(view_id=json["view_id"], view_name=json["view_name"])
+    if json["type"] == "container":
+        return ContainerSelection(container_id=json["container_id"], container_name=json["container_name"])
+    else:
+        raise NotImplementedError(f"selection item kind {json[type]} is not handled")
+
+
+class SelectionItems(EventData):
+    def __init__(self, target: Any, data: Any):
+        super().__init__(target, data)
+
+        self.items = [
+            _selection_item_from_json(item) for item in data
+        ]
 
 
 class RerunData(GradioRootModel):
@@ -30,7 +103,9 @@ class Rerun(Component, StreamingOutput):
     Creates a Rerun viewer component that can be used to display the output of a Rerun stream.
     """
 
-    EVENTS: list[EventListener | str] = []
+    EVENTS: list[EventListener | str] = [
+        EventListener("selection_change", doc="Fired when the selection changes."),
+    ]
 
     data_model = RerunData
 
@@ -115,22 +190,17 @@ class Rerun(Component, StreamingOutput):
             A FileData object containing the image data.
         """
         if value is None:
-            print("[postprocess] value is None")
             return RerunData(root=[])
 
         if isinstance(value, bytes):
-            print("[postprocess] value is bytes")
             if self.streaming:
-                print("[postprocess] value is streaming")
                 return value
-            print("[postprocess] value is byte cache")
             file_path = processing_utils.save_bytes_to_cache(
                 value, "rrd", cache_dir=self.GRADIO_CACHE
             )
             return RerunData(root=[FileData(path=file_path)])
 
         if not isinstance(value, list):
-            print("[postprocess] value is not list")
             value = [value]
 
         def is_url(input: Path | str) -> bool:
@@ -138,7 +208,6 @@ class Rerun(Component, StreamingOutput):
                 return False
             return input.startswith("http://") or input.startswith("https://")
 
-        print("[postprocess] value is is_url:", [is_url(file) for file in value])
         return RerunData(
             root=[
                 FileData(
@@ -165,10 +234,8 @@ class Rerun(Component, StreamingOutput):
             "meta": {"_type": "gradio.FileData"},
         }
         if value is None:
-            print("value is None")
             return None, output_file
 
-        print("returning media stream chunk!")
         return MediaStreamChunk(data=value, duration=0.1, extension=".ts"), output_file
 
     async def combine_stream(
@@ -177,7 +244,6 @@ class Rerun(Component, StreamingOutput):
         desired_output_format: str | None = None,
         only_file=False,
     ) -> RerunData | FileData:
-        print("combining streams!!!")
         return None
 
     def check_streamable(self):

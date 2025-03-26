@@ -18,6 +18,7 @@
   import { StatusTracker } from "@gradio/statustracker";
   import type { FileData } from "@gradio/client";
   import type { LoadingStatus } from "@gradio/statustracker";
+  import type { SelectionItem } from "@rerun-io/web-viewer";
 
   interface BinaryStream {
     url: string;
@@ -43,6 +44,7 @@
     upload: never;
     clear: never;
     clear_status: LoadingStatus;
+    selection_change: SelectionItem[];
   }>;
 
   $: height = typeof height === "number" ? `${height}px` : height;
@@ -57,15 +59,10 @@
   let sentSegments = new Set<string>();
 
   function try_load_value() {
-    console.log("try load value", value, old_value);
     if (rr != undefined && rr.ready) {
-      console.log("should be ready");
       old_value = value;
       if (!Array.isArray(value)) {
-        console.log("not array");
         if (value.is_stream) {
-          console.log("is a stream", value);
-          console.log("url:", value.url);
           // Fetch the HLS playlist
           fetch(value.url)
             .then((response) => {
@@ -97,9 +94,6 @@
                   return;
                 }
                 const currentUrl = uniqueSegmentUrls[processedCount];
-                console.log(
-                  `Fetching segment ${processedCount + 1}/${uniqueSegmentUrls.length}: ${currentUrl}`
-                );
 
                 // Extra check in case the segment was processed in a previous run
                 if (sentSegments.has(currentUrl)) {
@@ -136,14 +130,10 @@
               console.error("Error fetching or processing HLS stream:", error);
             });
         } else {
-          console.log("not a stream", value);
-          console.log("url:", value.url);
           rr.open(value.url);
         }
       } else {
-        console.log("is an array");
         for (const file of value) {
-          console.log("file:", file);
           if (typeof file !== "string") {
             if (file.url) {
               rr.open(file.url);
@@ -176,6 +166,7 @@
       setup_panels();
     });
     rr.on("fullscreen", (on) => rr.toggle_panel_overrides(!on));
+    rr.on("selectionchange", (items) => gradio.dispatch("selection_change", items));
 
     rr.start(undefined, ref, {
       hide_welcome_screen: true,
@@ -191,8 +182,6 @@
 
   $: {
     patched_loading_status = loading_status;
-    console.log("loading status", loading_status?.status);
-    console.log("streaming", streaming);
     if (streaming && patched_loading_status?.status === "generating") {
       patched_loading_status.status = "complete";
     }
