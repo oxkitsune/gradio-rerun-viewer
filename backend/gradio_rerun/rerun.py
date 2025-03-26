@@ -115,22 +115,17 @@ class Rerun(Component, StreamingOutput):
             A FileData object containing the image data.
         """
         if value is None:
-            print("[postprocess] value is None")
             return RerunData(root=[])
 
         if isinstance(value, bytes):
-            print("[postprocess] value is bytes")
             if self.streaming:
-                print("[postprocess] value is streaming")
                 return value
-            print("[postprocess] value is byte cache")
             file_path = processing_utils.save_bytes_to_cache(
                 value, "rrd", cache_dir=self.GRADIO_CACHE
             )
             return RerunData(root=[FileData(path=file_path)])
 
         if not isinstance(value, list):
-            print("[postprocess] value is not list")
             value = [value]
 
         def is_url(input: Path | str) -> bool:
@@ -138,7 +133,6 @@ class Rerun(Component, StreamingOutput):
                 return False
             return input.startswith("http://") or input.startswith("https://")
 
-        print("[postprocess] value is is_url:", [is_url(file) for file in value])
         return RerunData(
             root=[
                 FileData(
@@ -165,10 +159,8 @@ class Rerun(Component, StreamingOutput):
             "meta": {"_type": "gradio.FileData"},
         }
         if value is None:
-            print("value is None")
             return None, output_file
 
-        print("returning media stream chunk!")
         return MediaStreamChunk(data=value, duration=0.1, extension=".ts"), output_file
 
     async def combine_stream(
@@ -177,7 +169,6 @@ class Rerun(Component, StreamingOutput):
         desired_output_format: str | None = None,
         only_file=False,
     ) -> RerunData | FileData:
-        print("combining streams!!!")
         return None
 
     def check_streamable(self):
