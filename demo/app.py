@@ -4,7 +4,7 @@ import tempfile
 import time
 
 import gradio as gr
-from gradio_rerun import Rerun
+from gradio_rerun import Rerun, SelectionItems
 
 import rerun as rr
 import rerun.blueprint as rrb
@@ -138,6 +138,11 @@ with gr.Blocks() as demo:
             inputs=[x_count, y_count, z_count, pending_cleanup],
             outputs=[viewer],
         )
+
+        def on_selection_change(selection: SelectionItems):
+            print("selection change", selection.items)
+            pass
+        viewer.selection_change(on_selection_change)
 
     with gr.Tab("Hosted RRD"):
         with gr.Row():
