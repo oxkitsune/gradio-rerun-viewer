@@ -18,6 +18,7 @@
   import { StatusTracker } from "@gradio/statustracker";
   import type { FileData } from "@gradio/client";
   import type { LoadingStatus } from "@gradio/statustracker";
+  import type { SelectionItem } from "@rerun-io/web-viewer";
 
   interface BinaryStream {
     url: string;
@@ -43,6 +44,7 @@
     upload: never;
     clear: never;
     clear_status: LoadingStatus;
+    selection_change: SelectionItem[];
   }>;
 
   $: height = typeof height === "number" ? `${height}px` : height;
@@ -164,6 +166,7 @@
       setup_panels();
     });
     rr.on("fullscreen", (on) => rr.toggle_panel_overrides(!on));
+    rr.on("selectionchange", (items) => gradio.dispatch("selection_change", items));
 
     rr.start(undefined, ref, {
       hide_welcome_screen: true,
