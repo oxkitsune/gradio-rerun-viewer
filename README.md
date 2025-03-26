@@ -30,6 +30,7 @@ import time
 
 import gradio as gr
 from gradio_rerun import Rerun
+from gradio_rerun.events import SelectionChange, TimeUpdate, TimelineChange
 
 import rerun as rr
 import rerun.blueprint as rrb
@@ -133,6 +134,20 @@ with gr.Blocks() as demo:
             )
         stream_blur.click(streaming_repeated_blur, inputs=[img], outputs=[viewer])
 
+        def on_selection_change(evt: SelectionChange):
+            print("selection change", evt.items)
+
+        def on_time_update(evt: TimeUpdate):
+            print("time update", evt.time)
+
+        def on_timeline_change(evt: TimelineChange):
+            print("timeline change", evt.timeline, evt.time)
+
+        viewer.selection_change(on_selection_change)
+        viewer.time_update(on_time_update)
+        viewer.timeline_change(on_timeline_change)
+
+
     with gr.Tab("Dynamic RRD"):
         pending_cleanup = gr.State(
             [], time_to_live=10, delete_callback=cleanup_cube_rrds
@@ -190,6 +205,7 @@ with gr.Blocks() as demo:
 
 if __name__ == "__main__":
     demo.launch()
+
 
 ```
 
@@ -395,7 +411,7 @@ bool
 <td align="left" style="width: 25%;">
 
 ```python
-dict[str, Any] | None
+dict[str, typing.Any] | None
 ```
 
 </td>
@@ -404,6 +420,14 @@ dict[str, Any] | None
 </tr>
 </tbody></table>
 
+
+### Events
+
+| name | description |
+|:-----|:------------|
+| `selection_change` | Fired when the selection changes. Callback should accept a parameter of type `gradio_rerun.events.SelectionChange`. |
+| `time_update` | Fired when time updates. Callback should accept a parameter of type `gradio_rerun.events.TimeUpdate`. |
+| `timeline_change` | Fired when a timeline is selected. Callback should accept a parameter of type `gradio_rerun.events.TimelineChange`. |
 
 
 

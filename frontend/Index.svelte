@@ -45,6 +45,8 @@
     clear: never;
     clear_status: LoadingStatus;
     selection_change: SelectionItem[];
+    time_update: number;
+    timeline_change: {timeline: string, time: number};
   }>;
 
   $: height = typeof height === "number" ? `${height}px` : height;
@@ -167,6 +169,8 @@
     });
     rr.on("fullscreen", (on) => rr.toggle_panel_overrides(!on));
     rr.on("selectionchange", (items) => gradio.dispatch("selection_change", items));
+    rr.on("timeupdate", (time) => gradio.dispatch("time_update", time));
+    rr.on("timelinechange", (timeline, time) => gradio.dispatch("timeline_change", {timeline,time}));
 
     rr.start(undefined, ref, {
       hide_welcome_screen: true,

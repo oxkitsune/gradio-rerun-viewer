@@ -1,4 +1,4 @@
 
-from .rerun import Rerun, SelectionItem, SelectionItems
+from .rerun import Rerun
 
 __all__ = ['Rerun']

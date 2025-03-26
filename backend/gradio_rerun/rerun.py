@@ -2,90 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Literal
+from typing import Any, Callable
 
-from gradio import EventData, processing_utils
+from gradio import processing_utils
 from gradio.components.base import Component, StreamingOutput
 from gradio.data_classes import FileData, GradioRootModel, MediaStreamChunk
 from gradio.events import EventListener
-
-
-@dataclass
-class EntitySelection:
-    """
-    Selected an entity, or an instance of an entity.
-
-    If the entity was selected within a view, then this also
-    includes the view's name.
-
-    If the entity was selected within a 2D or 3D space view,
-    then this also includes the position.
-    """
-
-    @property
-    def kind(self) -> Literal["entity"]:
-        return "entity"
-
-    entity_path: str
-    instance_id: int | None
-    view_name: str | None
-    position: tuple[int, int, int] | None
-
-
-@dataclass
-class ViewSelection:
-    """Selected a view."""
-
-    @property
-    def kind(self) -> Literal["view"]:
-        return "view"
-
-    view_id: str
-    view_name: str
-
-
-@dataclass
-class ContainerSelection:
-    """Selected a container."""
-
-    @property
-    def kind(self) -> Literal["container"]:
-        return "container"
-
-    container_id: str
-    container_name: str
-
-
-SelectionItem = EntitySelection | ViewSelection | ContainerSelection
-"""A single item in a selection."""
-
-
-def _selection_item_from_json(json: Any) -> SelectionItem:
-    if json["type"] == "entity":
-        position = json.get("position", None)
-        return EntitySelection(
-            entity_path=json["entity_path"],
-            instance_id=json.get("instance_id", None),
-            view_name=json.get("view_name", None),
-            position=(position[0], position[1], position[2]) if position is not None else None,
-        )
-    if json["type"] == "view":
-        return ViewSelection(view_id=json["view_id"], view_name=json["view_name"])
-    if json["type"] == "container":
-        return ContainerSelection(container_id=json["container_id"], container_name=json["container_name"])
-    else:
-        raise NotImplementedError(f"selection item kind {json[type]} is not handled")
-
-
-class SelectionItems(EventData):
-    def __init__(self, target: Any, data: Any):
-        super().__init__(target, data)
-
-        self.items = [
-            _selection_item_from_json(item) for item in data
-        ]
 
 
 class RerunData(GradioRootModel):
@@ -104,7 +27,9 @@ class Rerun(Component, StreamingOutput):
     """
 
     EVENTS: list[EventListener | str] = [
-        EventListener("selection_change", doc="Fired when the selection changes."),
+        EventListener("selection_change", doc="Fired when the selection changes. Callback should accept a parameter of type `gradio_rerun.events.SelectionChange`."),
+        EventListener("time_update", doc="Fired when time updates. Callback should accept a parameter of type `gradio_rerun.events.TimeUpdate`."),
+        EventListener("timeline_change", doc="Fired when a timeline is selected. Callback should accept a parameter of type `gradio_rerun.events.TimelineChange`."),
     ]
 
     data_model = RerunData
