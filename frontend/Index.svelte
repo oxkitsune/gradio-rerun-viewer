@@ -46,7 +46,7 @@
     clear_status: LoadingStatus;
     selection_change: SelectionItem[];
     time_update: number;
-    timeline_change: {timeline: string, time: number};
+    timeline_change: { timeline: string; time: number };
   }>;
 
   $: height = typeof height === "number" ? `${height}px` : height;
@@ -61,7 +61,7 @@
    * Used to keep track of the playlist currently being fetched
    * in case we're streaming data.
    */
-  let current_playlist: { url: string, content: string } | null = null;
+  let current_playlist: { url: string; content: string } | null = null;
 
   /** Fetch a list of segment URLs */
   async function fetch_playlist(value: BinaryStream) {
@@ -161,9 +161,13 @@
       setup_panels();
     });
     rr.on("fullscreen", (on) => rr.toggle_panel_overrides(!on));
-    rr.on("selectionchange", (items) => gradio.dispatch("selection_change", items));
+    rr.on("selectionchange", (items) =>
+      gradio.dispatch("selection_change", items)
+    );
     rr.on("timeupdate", (time) => gradio.dispatch("time_update", time));
-    rr.on("timelinechange", (timeline, time) => gradio.dispatch("timeline_change", {timeline,time}));
+    rr.on("timelinechange", (timeline, time) =>
+      gradio.dispatch("timeline_change", { timeline, time })
+    );
 
     rr.start(undefined, ref, {
       hide_welcome_screen: true,
@@ -201,12 +205,15 @@
     {scale}
     {min_width}
   >
-    <StatusTracker
-      autoscroll={gradio.autoscroll}
-      i18n={gradio.i18n}
-      {...patched_loading_status}
-      on:clear_status={() => gradio.dispatch("clear_status", loading_status)}
-    />
+    {#if !streaming}
+      <StatusTracker
+        autoscroll={gradio.autoscroll}
+        i18n={gradio.i18n}
+        {...patched_loading_status}
+        on:clear_status={() => gradio.dispatch("clear_status", loading_status)}
+      />
+    {/if}
+
     <div class="viewer" bind:this={ref} style:height />
   </Block>
 {/if}
