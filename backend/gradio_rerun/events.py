@@ -77,7 +77,7 @@ class SelectionChange(EventData):
     def __init__(self, target: Any, data: Any):
         super().__init__(target, data)
 
-        self.items = [
+        self.items: list[SelectionItem] = [
             _selection_item_from_json(item) for item in data
         ]
 

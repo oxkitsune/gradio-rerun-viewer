@@ -57,95 +57,88 @@
   let ref: HTMLDivElement;
   let patched_loading_status: LoadingStatus;
 
-  // Global set to track segments already sent
-  let sentSegments = new Set<string>();
+  /**
+   * Used to keep track of the playlist currently being fetched
+   * in case we're streaming data.
+   */
+  let current_playlist: { url: string, content: string } | null = null;
 
-  function try_load_value() {
-    if (rr != undefined && rr.ready) {
-      old_value = value;
-      if (!Array.isArray(value)) {
-        if (value.is_stream) {
-          // Fetch the HLS playlist
-          fetch(value.url)
-            .then((response) => {
-              if (!response.ok) throw new Error("Failed to fetch playlist");
-              return response.text();
-            })
-            .then((playlistContent) => {
-              // Parse the playlist to extract segment URLs
-              const lines = playlistContent.trim().split("\n");
-              const baseUrl = new URL("./", value.url).href;
-              const uniqueSegmentUrls: string[] = [];
+  /** Fetch a list of segment URLs */
+  async function fetch_playlist(value: BinaryStream) {
+    let resp = await fetch(value.url);
+    if (!resp.ok) throw new Error("Failed to fetch playlist");
 
-              // Only include segments that haven't been processed yet
-              lines.forEach((line) => {
-                if (!line.startsWith("#") && line.trim()) {
-                  const segmentUrl = line.startsWith("http")
-                    ? line
-                    : new URL(line, baseUrl).href;
-                  if (!sentSegments.has(segmentUrl)) {
-                    uniqueSegmentUrls.push(segmentUrl);
-                  }
-                }
-              });
+    let baseUrl = new URL("./", value.url);
+    let playlist = await resp.text();
 
-              // Fetch and process each segment sequentially
-              let processedCount = 0;
-              function processNextSegment() {
-                if (processedCount >= uniqueSegmentUrls.length) {
-                  return;
-                }
-                const currentUrl = uniqueSegmentUrls[processedCount];
+    if (current_playlist && current_playlist.url == baseUrl.href) {
+      // we're fetching the same playlist as last time
+      // diff it and fetch only the segments we haven't seen yet
+      let current_length = current_playlist.content.length;
+      current_playlist.content = playlist;
+      playlist = playlist.slice(current_length);
+    } else {
+      // it's a different playlist, start over
+      current_playlist = { url: baseUrl.href, content: playlist };
+    }
 
-                // Extra check in case the segment was processed in a previous run
-                if (sentSegments.has(currentUrl)) {
-                  processedCount++;
-                  processNextSegment();
-                  return;
-                }
+    // Each line is either a comment starting with #, a segment ID, or a segment URL.
+    let urls: string[] = [];
+    for (const line of playlist.trim().split("\n")) {
+      if (line.startsWith("#") || line.trim().length === 0) continue;
 
-                fetch(currentUrl)
-                  .then((response) => {
-                    if (!response.ok)
-                      throw new Error(`Failed to fetch segment: ${currentUrl}`);
-                    return response.arrayBuffer();
-                  })
-                  .then((buffer) => {
-                    channel.send_rrd(new Uint8Array(buffer));
+      let url = line.startsWith("http") ? line : new URL(line, baseUrl).href;
+      urls.push(url);
+    }
 
-                    sentSegments.add(currentUrl);
-                    processedCount++;
-                    processNextSegment();
-                  })
-                  .catch((error) => {
-                    console.error(
-                      `Error processing segment ${currentUrl}:`,
-                      error
-                    );
-                    processedCount++;
-                    processNextSegment();
-                  });
-              }
-              processNextSegment();
-            })
-            .catch((error) => {
-              console.error("Error fetching or processing HLS stream:", error);
-            });
-        } else {
-          rr.open(value.url);
-        }
-      } else {
-        for (const file of value) {
-          if (typeof file !== "string") {
-            if (file.url) {
-              rr.open(file.url);
-            }
-          } else {
-            rr.open(file);
+    // Fetch each segment sequentially, and send them through the channel
+    for (const url of urls) {
+      let resp = await fetch(url);
+      if (!resp.ok) throw new Error(`Failed to fetch segment: ${url}`);
+
+      let bytes = await resp.arrayBuffer();
+      channel.send_rrd(new Uint8Array(bytes));
+    }
+  }
+
+  async function try_load_value() {
+    if (value == null) {
+      old_value = null;
+      return;
+    }
+
+    if (rr == undefined || !rr.ready) {
+      return;
+    }
+
+    old_value = value;
+
+    // List of static or dynamic rrd URLs.
+    // We just let the Viewer handle the streaming.
+    if (Array.isArray(value)) {
+      for (const file of value) {
+        if (typeof file !== "string") {
+          if (file.url) {
+            rr.open(file.url);
           }
+        } else {
+          rr.open(file);
         }
       }
+      return;
     }
+
+    // Binary stream data. We receive a "playlist" of "typescript files",
+    // each of which is a segment of the recording, produced by the backend
+    // and streamed to us.
+    if (value.is_stream) {
+      await fetch_playlist(value);
+      return;
+    }
+
+    // Binary data, but not streamed
+    // TODO(jan, gijs): is this still a valid case?
+    rr.open(value.url);
   }
 
   const is_panel = (v: string): v is Panel =>
