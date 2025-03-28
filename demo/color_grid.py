@@ -35,15 +35,13 @@ def build_color_grid(x_count=10, y_count=10, z_count=10, twist=0):
 
     positions = np.vstack([xyz.ravel() for xyz in grid])
 
-    colors = np.vstack(
-        [
-            xyz.ravel()
-            for xyz in np.mgrid[
-                slice(0, 255, x_count * 1j),
-                slice(0, 255, y_count * 1j),
-                slice(0, 255, z_count * 1j),
-            ]
+    colors = np.vstack([
+        xyz.ravel()
+        for xyz in np.mgrid[
+            slice(0, 255, x_count * 1j),
+            slice(0, 255, y_count * 1j),
+            slice(0, 255, z_count * 1j),
         ]
-    )
+    ])
 
     return ColorGrid(positions.T, colors.T.astype(np.uint8))
