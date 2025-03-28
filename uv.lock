@@ -425,6 +425,7 @@ dev = [
 dev = [
     { name = "build" },
     { name = "mypy" },
+    { name = "opencv-python" },
 ]
 
 [package.metadata]
@@ -442,6 +443,7 @@ provides-extras = ["dev"]
 dev = [
     { name = "build", specifier = ">=1.2.2.post1" },
     { name = "mypy", specifier = ">=1.15.0" },
+    { name = "opencv-python", specifier = ">=4.10.0.84" },
 ]
 
 [[package]]

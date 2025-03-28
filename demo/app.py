@@ -1,22 +1,27 @@
+"""
+Demonstrates integrating Rerun visualization with Gradio.
+
+Provides example implementations of data streaming, keypoint annotation, and dynamic
+visualization across multiple Gradio tabs using Rerun's recording and visualization capabilities.
+"""
+
 import math
-import uuid
-import time
-import tempfile
 import os
+import tempfile
+import time
+import uuid
 
 import cv2
 import gradio as gr
+import rerun as rr
+import rerun.blueprint as rrb
+from color_grid import build_color_grid
 from gradio_rerun import Rerun
 from gradio_rerun.events import (
     SelectionChange,
     TimelineChange,
     TimeUpdate,
 )
-
-import rerun as rr
-import rerun.blueprint as rrb
-
-from color_grid import build_color_grid
 
 
 # Whenever we need a recording, we construct a new recording stream.
@@ -88,16 +93,17 @@ def get_keypoints_for_user_at_sequence_index(request: gr.Request, sequence: int)
     return per_sequence[sequence]
 
 
-def initialize_instance(request: gr.Request):
+def initialize_instance(request: gr.Request) -> None:
     keypoints_per_session_per_sequence_index[request.session_hash] = {}
 
 
-def cleanup_instance(request: gr.Request):
+def cleanup_instance(request: gr.Request) -> None:
     if request.session_hash in keypoints_per_session_per_sequence_index:
         del keypoints_per_session_per_sequence_index[request.session_hash]
 
 
-# In this function, the `request` and `evt` parameters will be automatically injected by Gradio when this event listener is fired.
+# In this function, the `request` and `evt` parameters will be automatically injected by Gradio when this
+# event listener is fired.
 #
 # `SelectionChange` is a subclass of `EventData`: https://www.gradio.app/docs/gradio/eventdata
 # `gr.Request`: https://www.gradio.app/main/docs/gradio/request
@@ -180,7 +186,7 @@ def create_cube_rrd(x, y, z, pending_cleanup):
     return temp.name
 
 
-def cleanup_cube_rrds(pending_cleanup):
+def cleanup_cube_rrds(pending_cleanup: list[str]) -> None:
     for f in pending_cleanup:
         os.unlink(f)
 
@@ -209,8 +215,8 @@ with gr.Blocks() as demo:
         current_timeline = gr.State("")
         current_time = gr.State(0.0)
 
-        # When registering the event listeners, we pass the `recording_id` in as input in order to create a recording stream
-        # using that id.
+        # When registering the event listeners, we pass the `recording_id` in as input in order to create
+        # a recording stream using that id.
         stream_blur.click(
             # Using the `viewer` as an output allows us to stream data to it by yielding bytes from the callback.
             streaming_repeated_blur,
