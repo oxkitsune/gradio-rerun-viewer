@@ -217,7 +217,9 @@ with gr.Blocks() as demo:
         # using that id.
         stream_blur.click(
             # Using the `viewer` as an output allows us to stream data to it by yielding bytes from the callback.
-            streaming_repeated_blur, inputs=[recording_id, img], outputs=[viewer]
+            streaming_repeated_blur,
+            inputs=[recording_id, img],
+            outputs=[viewer],
         )
         viewer.selection_change(
             register_keypoint,

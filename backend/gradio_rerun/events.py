@@ -63,12 +63,16 @@ def _selection_item_from_json(json: Any) -> SelectionItem:
             entity_path=json["entity_path"],
             instance_id=json.get("instance_id", None),
             view_name=json.get("view_name", None),
-            position=(position[0], position[1], position[2]) if position is not None else None,
+            position=(position[0], position[1], position[2])
+            if position is not None
+            else None,
         )
     if json["type"] == "view":
         return ViewSelection(view_id=json["view_id"], view_name=json["view_name"])
     if json["type"] == "container":
-        return ContainerSelection(container_id=json["container_id"], container_name=json["container_name"])
+        return ContainerSelection(
+            container_id=json["container_id"], container_name=json["container_name"]
+        )
     else:
         raise NotImplementedError(f"selection item kind {json[type]} is not handled")
 
@@ -88,11 +92,10 @@ class TimeUpdate(EventData):
 
         self.time = data
 
+
 class TimelineChange(EventData):
     def __init__(self, target: Any, data: Any):
         super().__init__(target, data)
 
         self.timeline = data["timeline"]
         self.time = data["time"]
-
-
