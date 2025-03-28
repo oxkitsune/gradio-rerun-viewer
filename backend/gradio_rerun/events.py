@@ -1,3 +1,5 @@
+"""Events fired by the Rerun block."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -74,25 +76,52 @@ def _selection_item_from_json(json: Any) -> SelectionItem:
 
 
 class SelectionChange(EventData):
-    def __init__(self, target: Any, data: Any):
+    """Event fired when the selection changes in the viewer."""
+
+    def __init__(self, target: Any, data: Any) -> None:
+        """
+        Initialize a SelectionChange event.
+
+        Args:
+            target (Any): The object that triggered the selection change event.
+            data (Any): Raw JSON data containing information about the selection.
+
+        """
         super().__init__(target, data)
 
-        self.items: list[SelectionItem] = [
-            _selection_item_from_json(item) for item in data
-        ]
+        self.items: list[SelectionItem] = [_selection_item_from_json(item) for item in data]
 
 
 class TimeUpdate(EventData):
-    def __init__(self, target: Any, data: Any):
+    """Event triggered when the time is updated in the viewer."""
+
+    def __init__(self, target: Any, data: Any) -> None:
+        """
+        Initialize a TimeUpdate event.
+
+        Args:
+            target (Any): The object that triggered the time update event.
+            data (Any): The new time value.
+
+        """
         super().__init__(target, data)
 
         self.time = data
 
+
 class TimelineChange(EventData):
-    def __init__(self, target: Any, data: Any):
+    """Event triggered when the timeline changes in the viewer."""
+
+    def __init__(self, target: Any, data: Any) -> None:
+        """
+        Initialize a TimelineChange event.
+
+        Args:
+            target (Any): The object that triggered the timeline change event.
+            data (Any): A dictionary containing timeline and time information.
+
+        """
         super().__init__(target, data)
 
         self.timeline = data["timeline"]
         self.time = data["time"]
-
-

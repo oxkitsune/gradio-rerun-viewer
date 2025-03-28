@@ -1,11 +1,21 @@
+"""
+Demonstrates integrating Rerun visualization with Gradio.
+
+Provides example implementations of data streaming, keypoint annotation, and dynamic
+visualization across multiple Gradio tabs using Rerun's recording and visualization capabilities.
+"""
+
 import math
-import uuid
-import time
-import tempfile
 import os
+import tempfile
+import time
+import uuid
 
 import cv2
 import gradio as gr
+import rerun as rr
+import rerun.blueprint as rrb
+from color_grid import build_color_grid
 from gradio_rerun import Rerun
 from gradio_rerun.events import (
     SelectionChange,
@@ -13,19 +23,12 @@ from gradio_rerun.events import (
     TimeUpdate,
 )
 
-import rerun as rr
-import rerun.blueprint as rrb
-
-from color_grid import build_color_grid
-
 
 # Whenever we need a recording, we construct a new recording stream.
 # As long as the app and recording IDs remain the same, the data
 # will be merged by the Viewer.
 def get_recording(recording_id: str) -> rr.RecordingStream:
-    return rr.RecordingStream(
-        application_id="rerun_example_gradio", recording_id=recording_id
-    )
+    return rr.RecordingStream(application_id="rerun_example_gradio", recording_id=recording_id)
 
 
 # A task can directly log to a binary stream, which is routed to the embedded viewer.
@@ -82,9 +85,7 @@ Keypoint = tuple[float, float]
 keypoints_per_session_per_sequence_index: dict[str, dict[int, list[Keypoint]]] = {}
 
 
-def get_keypoints_for_user_at_sequence_index(
-    request: gr.Request, sequence: int
-) -> list[Keypoint]:
+def get_keypoints_for_user_at_sequence_index(request: gr.Request, sequence: int) -> list[Keypoint]:
     per_sequence = keypoints_per_session_per_sequence_index[request.session_hash]
     if sequence not in per_sequence:
         per_sequence[sequence] = []
@@ -92,16 +93,17 @@ def get_keypoints_for_user_at_sequence_index(
     return per_sequence[sequence]
 
 
-def initialize_instance(request: gr.Request):
+def initialize_instance(request: gr.Request) -> None:
     keypoints_per_session_per_sequence_index[request.session_hash] = {}
 
 
-def cleanup_instance(request: gr.Request):
+def cleanup_instance(request: gr.Request) -> None:
     if request.session_hash in keypoints_per_session_per_sequence_index:
         del keypoints_per_session_per_sequence_index[request.session_hash]
 
 
-# In this function, the `request` and `evt` parameters will be automatically injected by Gradio when this event listener is fired.
+# In this function, the `request` and `evt` parameters will be automatically injected by Gradio when this
+# event listener is fired.
 #
 # `SelectionChange` is a subclass of `EventData`: https://www.gradio.app/docs/gradio/eventdata
 # `gr.Request`: https://www.gradio.app/main/docs/gradio/request
@@ -184,7 +186,7 @@ def create_cube_rrd(x, y, z, pending_cleanup):
     return temp.name
 
 
-def cleanup_cube_rrds(pending_cleanup):
+def cleanup_cube_rrds(pending_cleanup: list[str]) -> None:
     for f in pending_cleanup:
         os.unlink(f)
 
@@ -213,11 +215,13 @@ with gr.Blocks() as demo:
         current_timeline = gr.State("")
         current_time = gr.State(0.0)
 
-        # When registering the event listeners, we pass the `recording_id` in as input in order to create a recording stream
-        # using that id.
+        # When registering the event listeners, we pass the `recording_id` in as input in order to create
+        # a recording stream using that id.
         stream_blur.click(
             # Using the `viewer` as an output allows us to stream data to it by yielding bytes from the callback.
-            streaming_repeated_blur, inputs=[recording_id, img], outputs=[viewer]
+            streaming_repeated_blur,
+            inputs=[recording_id, img],
+            outputs=[viewer],
         )
         viewer.selection_change(
             register_keypoint,
@@ -225,23 +229,13 @@ with gr.Blocks() as demo:
             outputs=[viewer],
         )
         viewer.time_update(track_current_time, outputs=[current_time])
-        viewer.timeline_change(
-            track_current_timeline_and_time, outputs=[current_timeline, current_time]
-        )
+        viewer.timeline_change(track_current_timeline_and_time, outputs=[current_timeline, current_time])
     with gr.Tab("Dynamic RRD"):
-        pending_cleanup = gr.State(
-            [], time_to_live=10, delete_callback=cleanup_cube_rrds
-        )
+        pending_cleanup = gr.State([], time_to_live=10, delete_callback=cleanup_cube_rrds)
         with gr.Row():
-            x_count = gr.Number(
-                minimum=1, maximum=10, value=5, precision=0, label="X Count"
-            )
-            y_count = gr.Number(
-                minimum=1, maximum=10, value=5, precision=0, label="Y Count"
-            )
-            z_count = gr.Number(
-                minimum=1, maximum=10, value=5, precision=0, label="Z Count"
-            )
+            x_count = gr.Number(minimum=1, maximum=10, value=5, precision=0, label="X Count")
+            y_count = gr.Number(minimum=1, maximum=10, value=5, precision=0, label="Y Count")
+            z_count = gr.Number(minimum=1, maximum=10, value=5, precision=0, label="Z Count")
         with gr.Row():
             create_rrd = gr.Button("Create RRD")
         with gr.Row():

@@ -1,11 +1,12 @@
-import numpy as np
+from collections import namedtuple  # noqa: D100
 from math import cos, sin
-from collections import namedtuple
+
+import numpy as np
 
 ColorGrid = namedtuple("ColorGrid", ["positions", "colors"])
 
 
-def build_color_grid(x_count=10, y_count=10, z_count=10, twist=0):
+def build_color_grid(x_count: int = 10, y_count: int = 10, z_count: int = 10, twist: int = 0) -> ColorGrid:
     """
     Create a cube of points with colors.
 
@@ -19,7 +20,6 @@ def build_color_grid(x_count=10, y_count=10, z_count=10, twist=0):
         Angle to twist from bottom to top of the cube
 
     """
-
     grid = np.mgrid[
         slice(-x_count, x_count, x_count * 1j),
         slice(-y_count, y_count, y_count * 1j),
@@ -35,15 +35,13 @@ def build_color_grid(x_count=10, y_count=10, z_count=10, twist=0):
 
     positions = np.vstack([xyz.ravel() for xyz in grid])
 
-    colors = np.vstack(
-        [
-            xyz.ravel()
-            for xyz in np.mgrid[
-                slice(0, 255, x_count * 1j),
-                slice(0, 255, y_count * 1j),
-                slice(0, 255, z_count * 1j),
-            ]
+    colors = np.vstack([
+        xyz.ravel()
+        for xyz in np.mgrid[
+            slice(0, 255, x_count * 1j),
+            slice(0, 255, y_count * 1j),
+            slice(0, 255, z_count * 1j),
         ]
-    )
+    ])
 
     return ColorGrid(positions.T, colors.T.astype(np.uint8))
