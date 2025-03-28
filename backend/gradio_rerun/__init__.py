@@ -1,4 +1,3 @@
-
 from .rerun import Rerun
 
-__all__ = ['Rerun']
+__all__ = ["Rerun"]

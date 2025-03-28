@@ -1,9 +1,124 @@
-
 import gradio as gr
 from app import demo as app
 import os
 
-_docs = {'Rerun': {'description': 'Creates a Rerun viewer component that can be used to display the output of a Rerun stream.', 'members': {'__init__': {'value': {'type': 'typing.Union[\n    list[pathlib.Path | str],\n    pathlib.Path,\n    str,\n    bytes,\n    typing.Callable,\n    NoneType,\n][\n    list[pathlib.Path | str],\n    pathlib.Path,\n    str,\n    bytes,\n    Callable,\n    None,\n]', 'default': 'None', 'description': 'Takes a singular or list of RRD resources. Each RRD can be a Path, a string containing a url, or a binary blob containing encoded RRD data. If callable, the function will be called whenever the app loads to set the initial value of the component.'}, 'label': {'type': 'str | None', 'default': 'None', 'description': 'The label for this component. Appears above the component and is also used as the header if there are a table of examples for this component. If None and used in a `gr.Interface`, the label will be the name of the parameter this component is assigned to.'}, 'every': {'type': 'float | None', 'default': 'None', 'description': "If `value` is a callable, run the function 'every' number of seconds while the client connection is open. Has no effect otherwise. Queue must be enabled. The event can be accessed (e.g. to cancel it) via this component's .load_event attribute."}, 'show_label': {'type': 'bool | None', 'default': 'None', 'description': 'if True, will display label.'}, 'container': {'type': 'bool', 'default': 'True', 'description': 'If True, will place the component in a container - providing some extra padding around the border.'}, 'scale': {'type': 'int | None', 'default': 'None', 'description': 'relative size compared to adjacent Components. For example if Components A and B are in a Row, and A has scale=2, and B has scale=1, A will be twice as wide as B. Should be an integer. scale applies in Rows, and to top-level Components in Blocks where fill_height=True.'}, 'min_width': {'type': 'int', 'default': '160', 'description': 'minimum pixel width, will wrap if not sufficient screen space to satisfy this value. If a certain scale value results in this Component being narrower than min_width, the min_width parameter will be respected first.'}, 'height': {'type': 'int | str', 'default': '640', 'description': 'height of component in pixels. If a string is provided, will be interpreted as a CSS value. If None, will be set to 640px.'}, 'visible': {'type': 'bool', 'default': 'True', 'description': 'If False, component will be hidden.'}, 'streaming': {'type': 'bool', 'default': 'False', 'description': 'If True, the data should be incrementally yielded from the source as `bytes` returned by calling `.read()` on an `rr.binary_stream()`'}, 'elem_id': {'type': 'str | None', 'default': 'None', 'description': 'An optional string that is assigned as the id of this component in the HTML DOM. Can be used for targeting CSS styles.'}, 'elem_classes': {'type': 'list[str] | str | None', 'default': 'None', 'description': 'An optional list of strings that are assigned as the classes of this component in the HTML DOM. Can be used for targeting CSS styles.'}, 'render': {'type': 'bool', 'default': 'True', 'description': 'If False, component will not render be rendered in the Blocks context. Should be used if the intention is to assign event listeners now but render the component later.'}, 'panel_states': {'type': 'dict[str, typing.Any] | None', 'default': 'None', 'description': 'Force viewer panels to a specific state. Any panels set cannot be toggled by the user in the viewer. Panel names are "top", "blueprint", "selection", and "time". States are "hidden", "collapsed", and "expanded".'}}, 'postprocess': {'value': {'type': 'list[pathlib.Path | str] | pathlib.Path | str | bytes', 'description': 'Expects'}}, 'preprocess': {'return': {'type': 'RerunData | None', 'description': 'A RerunData object.'}, 'value': None}}, 'events': {'selection_change': {'type': None, 'default': None, 'description': 'Fired when the selection changes. Callback should accept a parameter of type `gradio_rerun.events.SelectionChange`.'}, 'time_update': {'type': None, 'default': None, 'description': 'Fired when time updates. Callback should accept a parameter of type `gradio_rerun.events.TimeUpdate`.'}, 'timeline_change': {'type': None, 'default': None, 'description': 'Fired when a timeline is selected. Callback should accept a parameter of type `gradio_rerun.events.TimelineChange`.'}}}, '__meta__': {'additional_interfaces': {'RerunData': {'source': 'class RerunData(GradioRootModel):\n    root: list[FileData | str]'}}, 'user_fn_refs': {'Rerun': ['RerunData']}}}
+_docs = {
+    "Rerun": {
+        "description": "Creates a Rerun viewer component that can be used to display the output of a Rerun stream.",
+        "members": {
+            "__init__": {
+                "value": {
+                    "type": "typing.Union[\n    list[pathlib.Path | str],\n    pathlib.Path,\n    str,\n    bytes,\n    typing.Callable,\n    NoneType,\n][\n    list[pathlib.Path | str],\n    pathlib.Path,\n    str,\n    bytes,\n    Callable,\n    None,\n]",
+                    "default": "None",
+                    "description": "Takes a singular or list of RRD resources. Each RRD can be a Path, a string containing a url, or a binary blob containing encoded RRD data. If callable, the function will be called whenever the app loads to set the initial value of the component.",
+                },
+                "label": {
+                    "type": "str | None",
+                    "default": "None",
+                    "description": "The label for this component. Appears above the component and is also used as the header if there are a table of examples for this component. If None and used in a `gr.Interface`, the label will be the name of the parameter this component is assigned to.",
+                },
+                "every": {
+                    "type": "float | None",
+                    "default": "None",
+                    "description": "If `value` is a callable, run the function 'every' number of seconds while the client connection is open. Has no effect otherwise. Queue must be enabled. The event can be accessed (e.g. to cancel it) via this component's .load_event attribute.",
+                },
+                "show_label": {
+                    "type": "bool | None",
+                    "default": "None",
+                    "description": "if True, will display label.",
+                },
+                "container": {
+                    "type": "bool",
+                    "default": "True",
+                    "description": "If True, will place the component in a container - providing some extra padding around the border.",
+                },
+                "scale": {
+                    "type": "int | None",
+                    "default": "None",
+                    "description": "relative size compared to adjacent Components. For example if Components A and B are in a Row, and A has scale=2, and B has scale=1, A will be twice as wide as B. Should be an integer. scale applies in Rows, and to top-level Components in Blocks where fill_height=True.",
+                },
+                "min_width": {
+                    "type": "int",
+                    "default": "160",
+                    "description": "minimum pixel width, will wrap if not sufficient screen space to satisfy this value. If a certain scale value results in this Component being narrower than min_width, the min_width parameter will be respected first.",
+                },
+                "height": {
+                    "type": "int | str",
+                    "default": "640",
+                    "description": "height of component in pixels. If a string is provided, will be interpreted as a CSS value. If None, will be set to 640px.",
+                },
+                "visible": {
+                    "type": "bool",
+                    "default": "True",
+                    "description": "If False, component will be hidden.",
+                },
+                "streaming": {
+                    "type": "bool",
+                    "default": "False",
+                    "description": "If True, the data should be incrementally yielded from the source as `bytes` returned by calling `.read()` on an `rr.binary_stream()`",
+                },
+                "elem_id": {
+                    "type": "str | None",
+                    "default": "None",
+                    "description": "An optional string that is assigned as the id of this component in the HTML DOM. Can be used for targeting CSS styles.",
+                },
+                "elem_classes": {
+                    "type": "list[str] | str | None",
+                    "default": "None",
+                    "description": "An optional list of strings that are assigned as the classes of this component in the HTML DOM. Can be used for targeting CSS styles.",
+                },
+                "render": {
+                    "type": "bool",
+                    "default": "True",
+                    "description": "If False, component will not render be rendered in the Blocks context. Should be used if the intention is to assign event listeners now but render the component later.",
+                },
+                "panel_states": {
+                    "type": "dict[str, typing.Any] | None",
+                    "default": "None",
+                    "description": 'Force viewer panels to a specific state. Any panels set cannot be toggled by the user in the viewer. Panel names are "top", "blueprint", "selection", and "time". States are "hidden", "collapsed", and "expanded".',
+                },
+            },
+            "postprocess": {
+                "value": {
+                    "type": "list[pathlib.Path | str] | pathlib.Path | str | bytes",
+                    "description": "Expects",
+                }
+            },
+            "preprocess": {
+                "return": {
+                    "type": "RerunData | None",
+                    "description": "A RerunData object.",
+                },
+                "value": None,
+            },
+        },
+        "events": {
+            "selection_change": {
+                "type": None,
+                "default": None,
+                "description": "Fired when the selection changes. Callback should accept a parameter of type `gradio_rerun.events.SelectionChange`.",
+            },
+            "time_update": {
+                "type": None,
+                "default": None,
+                "description": "Fired when time updates. Callback should accept a parameter of type `gradio_rerun.events.TimeUpdate`.",
+            },
+            "timeline_change": {
+                "type": None,
+                "default": None,
+                "description": "Fired when a timeline is selected. Callback should accept a parameter of type `gradio_rerun.events.TimelineChange`.",
+            },
+        },
+    },
+    "__meta__": {
+        "additional_interfaces": {
+            "RerunData": {
+                "source": "class RerunData(GradioRootModel):\n    root: list[FileData | str]"
+            }
+        },
+        "user_fn_refs": {"Rerun": ["RerunData"]},
+    },
+}
 
 abs_path = os.path.join(os.path.dirname(__file__), "css.css")
 
@@ -17,7 +132,7 @@ with gr.Blocks(
     ),
 ) as demo:
     gr.Markdown(
-"""
+        """
 # `gradio_rerun`
 
 <div style="display: flex; gap: 7px;">
@@ -25,10 +140,13 @@ with gr.Blocks(
 </div>
 
 Rerun viewer with Gradio
-""", elem_classes=["md-custom"], header_links=True)
+""",
+        elem_classes=["md-custom"],
+        header_links=True,
+    )
     app.render()
     gr.Markdown(
-"""
+        """
 ## Installation
 
 ```bash
@@ -329,25 +447,28 @@ if __name__ == "__main__":
     demo.launch()
 
 ```
-""", elem_classes=["md-custom"], header_links=True)
+""",
+        elem_classes=["md-custom"],
+        header_links=True,
+    )
 
-
-    gr.Markdown("""
+    gr.Markdown(
+        """
 ## `Rerun`
 
 ### Initialization
-""", elem_classes=["md-custom"], header_links=True)
+""",
+        elem_classes=["md-custom"],
+        header_links=True,
+    )
 
-    gr.ParamViewer(value=_docs["Rerun"]["members"]["__init__"], linkify=['RerunData'])
-
+    gr.ParamViewer(value=_docs["Rerun"]["members"]["__init__"], linkify=["RerunData"])
 
     gr.Markdown("### Events")
-    gr.ParamViewer(value=_docs["Rerun"]["events"], linkify=['Event'])
+    gr.ParamViewer(value=_docs["Rerun"]["events"], linkify=["Event"])
 
-
-
-
-    gr.Markdown("""
+    gr.Markdown(
+        """
 
 ### User function
 
@@ -367,19 +488,25 @@ def predict(
 ) -> list[pathlib.Path | str] | pathlib.Path | str | bytes:
     return value
 ```
-""", elem_classes=["md-custom", "Rerun-user-fn"], header_links=True)
+""",
+        elem_classes=["md-custom", "Rerun-user-fn"],
+        header_links=True,
+    )
 
-
-
-
-    code_RerunData = gr.Markdown("""
+    code_RerunData = gr.Markdown(
+        """
 ## `RerunData`
 ```python
 class RerunData(GradioRootModel):
     root: list[FileData | str]
-```""", elem_classes=["md-custom", "RerunData"], header_links=True)
+```""",
+        elem_classes=["md-custom", "RerunData"],
+        header_links=True,
+    )
 
-    demo.load(None, js=r"""function() {
+    demo.load(
+        None,
+        js=r"""function() {
     const refs = {
             RerunData: [], };
     const user_fn_refs = {
@@ -414,6 +541,7 @@ class RerunData(GradioRootModel):
     })
 }
 
-""")
+""",
+    )
 
 demo.launch()
