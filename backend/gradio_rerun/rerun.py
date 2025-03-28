@@ -5,11 +5,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Callable
 
-from gradio_client import file
 from gradio import processing_utils
 from gradio.components.base import Component, StreamingOutput
-from gradio.data_classes import GradioRootModel, FileData
-from gradio.events import Events
+from gradio.data_classes import FileData, GradioRootModel, MediaStreamChunk
+from gradio.events import EventListener
 
 
 class RerunData(GradioRootModel):
@@ -27,7 +26,11 @@ class Rerun(Component, StreamingOutput):
     Creates a Rerun viewer component that can be used to display the output of a Rerun stream.
     """
 
-    EVENTS: list[Events] = []
+    EVENTS: list[EventListener | str] = [
+        EventListener("selection_change", doc="Fired when the selection changes. Callback should accept a parameter of type `gradio_rerun.events.SelectionChange`."),
+        EventListener("time_update", doc="Fired when time updates. Callback should accept a parameter of type `gradio_rerun.events.TimeUpdate`."),
+        EventListener("timeline_change", doc="Fired when a timeline is selected. Callback should accept a parameter of type `gradio_rerun.events.TimelineChange`."),
+    ]
 
     data_model = RerunData
 
@@ -143,16 +146,30 @@ class Rerun(Component, StreamingOutput):
             ]
         )
 
-    def stream_output(
-        self, value, output_id: str, first_chunk: bool
-    ) -> tuple[bytes | None, Any]:
+    async def stream_output(
+        self,
+        value: bytes | None,
+        output_id: str,
+        first_chunk: bool,  # noqa: ARG002
+    ) -> tuple[MediaStreamChunk | None, dict]:
         output_file = {
             "path": output_id,
             "is_stream": True,
+            "orig_name": "recording.rrd",
+            "meta": {"_type": "gradio.FileData"},
         }
         if value is None:
             return None, output_file
-        return value, output_file
+
+        return MediaStreamChunk(data=value, duration=0.1, extension=".ts"), output_file
+
+    async def combine_stream(
+        self,
+        stream: list[bytes],
+        desired_output_format: str | None = None,
+        only_file=False,
+    ) -> RerunData | FileData:
+        return None
 
     def check_streamable(self):
         return self.streaming
