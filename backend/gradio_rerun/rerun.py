@@ -114,9 +114,7 @@ class Rerun(Component, StreamingOutput):
             return None
         return payload
 
-    def postprocess(
-        self, value: list[Path | str] | Path | str | bytes
-    ) -> RerunData | bytes:
+    def postprocess(self, value: list[Path | str] | Path | str | bytes) -> RerunData | bytes:
         """
         Parameters:
             value: Expects
@@ -129,9 +127,7 @@ class Rerun(Component, StreamingOutput):
         if isinstance(value, bytes):
             if self.streaming:
                 return value
-            file_path = processing_utils.save_bytes_to_cache(
-                value, "rrd", cache_dir=self.GRADIO_CACHE
-            )
+            file_path = processing_utils.save_bytes_to_cache(value, "rrd", cache_dir=self.GRADIO_CACHE)
             return RerunData(root=[FileData(path=file_path)])
 
         if not isinstance(value, list):

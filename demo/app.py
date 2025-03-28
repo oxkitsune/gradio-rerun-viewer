@@ -23,9 +23,7 @@ from color_grid import build_color_grid
 # As long as the app and recording IDs remain the same, the data
 # will be merged by the Viewer.
 def get_recording(recording_id: str) -> rr.RecordingStream:
-    return rr.RecordingStream(
-        application_id="rerun_example_gradio", recording_id=recording_id
-    )
+    return rr.RecordingStream(application_id="rerun_example_gradio", recording_id=recording_id)
 
 
 # A task can directly log to a binary stream, which is routed to the embedded viewer.
@@ -82,9 +80,7 @@ Keypoint = tuple[float, float]
 keypoints_per_session_per_sequence_index: dict[str, dict[int, list[Keypoint]]] = {}
 
 
-def get_keypoints_for_user_at_sequence_index(
-    request: gr.Request, sequence: int
-) -> list[Keypoint]:
+def get_keypoints_for_user_at_sequence_index(request: gr.Request, sequence: int) -> list[Keypoint]:
     per_sequence = keypoints_per_session_per_sequence_index[request.session_hash]
     if sequence not in per_sequence:
         per_sequence[sequence] = []
@@ -227,23 +223,13 @@ with gr.Blocks() as demo:
             outputs=[viewer],
         )
         viewer.time_update(track_current_time, outputs=[current_time])
-        viewer.timeline_change(
-            track_current_timeline_and_time, outputs=[current_timeline, current_time]
-        )
+        viewer.timeline_change(track_current_timeline_and_time, outputs=[current_timeline, current_time])
     with gr.Tab("Dynamic RRD"):
-        pending_cleanup = gr.State(
-            [], time_to_live=10, delete_callback=cleanup_cube_rrds
-        )
+        pending_cleanup = gr.State([], time_to_live=10, delete_callback=cleanup_cube_rrds)
         with gr.Row():
-            x_count = gr.Number(
-                minimum=1, maximum=10, value=5, precision=0, label="X Count"
-            )
-            y_count = gr.Number(
-                minimum=1, maximum=10, value=5, precision=0, label="Y Count"
-            )
-            z_count = gr.Number(
-                minimum=1, maximum=10, value=5, precision=0, label="Z Count"
-            )
+            x_count = gr.Number(minimum=1, maximum=10, value=5, precision=0, label="X Count")
+            y_count = gr.Number(minimum=1, maximum=10, value=5, precision=0, label="Y Count")
+            z_count = gr.Number(minimum=1, maximum=10, value=5, precision=0, label="Z Count")
         with gr.Row():
             create_rrd = gr.Button("Create RRD")
         with gr.Row():
